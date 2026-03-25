@@ -56,10 +56,6 @@ stages:
       runOnce:
         deploy:
           steps:
-          - script: |
-              kubectl create namespace dev --dry-run=client -o yaml | kubectl apply -f -
-            displayName: 'Create Dev Namespace'
-
           - task: KubernetesManifest@0
             displayName: 'Deploy to Dev AKS'
             inputs:
@@ -85,10 +81,6 @@ stages:
       runOnce:
         deploy:
           steps:
-          - script: |
-              kubectl create namespace qa --dry-run=client -o yaml | kubectl apply -f -
-            displayName: 'Create QA Namespace'
-
           - task: KubernetesManifest@0
             displayName: 'Deploy to QA AKS'
             inputs:
@@ -114,10 +106,6 @@ stages:
       runOnce:
         deploy:
           steps:
-          - script: |
-              kubectl create namespace stage --dry-run=client -o yaml | kubectl apply -f -
-            displayName: 'Create Stage Namespace'
-
           - task: KubernetesManifest@0
             displayName: 'Deploy to Stage AKS'
             inputs:
@@ -143,10 +131,6 @@ stages:
       runOnce:
         deploy:
           steps:
-          - script: |
-              kubectl create namespace prod --dry-run=client -o yaml | kubectl apply -f -
-            displayName: 'Create Prod Namespace'
-
           - task: KubernetesManifest@0
             displayName: 'Deploy to Prod AKS'
             inputs:
