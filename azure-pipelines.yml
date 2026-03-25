@@ -39,6 +39,10 @@ stages:
         tags: |
           $(tag)
 
+    - publish: $(System.DefaultWorkingDirectory)/k8s
+      artifact: manifests
+      displayName: 'Publish Kubernetes Manifests'
+
 # ========================
 # 🔹 STAGE 2: DEV
 # ========================
@@ -59,8 +63,8 @@ stages:
               kubernetesServiceConnection: 'AKS-Service-Connection'
               namespace: 'dev'
               manifests: |
-                k8s/deployment.yaml
-                k8s/service.yaml
+                $(Pipeline.Workspace)/manifests/deployment.yaml
+                $(Pipeline.Workspace)/manifests/service.yaml
               containers: |
                 $(acrName).azurecr.io/$(imageName):$(tag)
 
@@ -84,8 +88,8 @@ stages:
               kubernetesServiceConnection: 'AKS-Service-Connection'
               namespace: 'qa'
               manifests: |
-                k8s/deployment.yaml
-                k8s/service.yaml
+                $(Pipeline.Workspace)/manifests/deployment.yaml
+                $(Pipeline.Workspace)/manifests/service.yaml
               containers: |
                 $(acrName).azurecr.io/$(imageName):$(tag)
 
@@ -109,8 +113,8 @@ stages:
               kubernetesServiceConnection: 'AKS-Service-Connection'
               namespace: 'stage'
               manifests: |
-                k8s/deployment.yaml
-                k8s/service.yaml
+                $(Pipeline.Workspace)/manifests/deployment.yaml
+                $(Pipeline.Workspace)/manifests/service.yaml
               containers: |
                 $(acrName).azurecr.io/$(imageName):$(tag)
 
@@ -134,7 +138,7 @@ stages:
               kubernetesServiceConnection: 'AKS-Service-Connection'
               namespace: 'prod'
               manifests: |
-                k8s/deployment.yaml
-                k8s/service.yaml
+                $(Pipeline.Workspace)/manifests/deployment.yaml
+                $(Pipeline.Workspace)/manifests/service.yaml
               containers: |
                 $(acrName).azurecr.io/$(imageName):$(tag)
