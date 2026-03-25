@@ -2,12 +2,12 @@ trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
 variables:
-  imageName: user-service
-  acrName: microacr123
-  tag: $(Build.BuildId)
+  imageName: 'user-service'
+  acrName: 'microacr123'
+  tag: '$(Build.BuildId)'
 
 stages:
 
@@ -20,17 +20,17 @@ stages:
   - job: BuildJob
     steps:
     - task: NodeTool@0
-      displayName: Install Node.js
+      displayName: 'Install Node.js'
       inputs:
         versionSpec: '18.x'
 
     - script: |
         cd user-service
         npm install
-      displayName: Install dependencies
+      displayName: 'Install dependencies'
 
     - task: Docker@2
-      displayName: Build and Push Image
+      displayName: 'Build and Push Image'
       inputs:
         containerRegistry: 'ACR-Service-Connection'
         repository: '$(imageName)'
@@ -47,22 +47,22 @@ stages:
   dependsOn: Build
   jobs:
   - deployment: DevDeploy
-    environment: dev
+    environment: 'dev'
     strategy:
       runOnce:
         deploy:
           steps:
           - task: KubernetesManifest@0
-            displayName: Deploy to Dev AKS
+            displayName: 'Deploy to Dev AKS'
             inputs:
               action: deploy
               kubernetesServiceConnection: 'AKS-Service-Connection'
-              namespace: dev
+              namespace: 'dev'
               manifests: |
                 k8s/deployment.yaml
                 k8s/service.yaml
               containers: |
-                microacr123.azurecr.io/user-service:$(tag)
+                $(acrName).azurecr.io/$(imageName):$(tag)
 
 # ========================
 # 🔹 STAGE 3: QA
@@ -72,22 +72,22 @@ stages:
   dependsOn: Dev
   jobs:
   - deployment: QADeploy
-    environment: qa
+    environment: 'qa'
     strategy:
       runOnce:
         deploy:
           steps:
           - task: KubernetesManifest@0
-            displayName: Deploy to QA AKS
+            displayName: 'Deploy to QA AKS'
             inputs:
               action: deploy
               kubernetesServiceConnection: 'AKS-Service-Connection'
-              namespace: qa
+              namespace: 'qa'
               manifests: |
                 k8s/deployment.yaml
                 k8s/service.yaml
               containers: |
-                microacr123.azurecr.io/user-service:$(tag)
+                $(acrName).azurecr.io/$(imageName):$(tag)
 
 # ========================
 # 🔹 STAGE 4: STAGE
@@ -97,22 +97,22 @@ stages:
   dependsOn: QA
   jobs:
   - deployment: StageDeploy
-    environment: stage
+    environment: 'stage'
     strategy:
       runOnce:
         deploy:
           steps:
           - task: KubernetesManifest@0
-            displayName: Deploy to Stage AKS
+            displayName: 'Deploy to Stage AKS'
             inputs:
               action: deploy
               kubernetesServiceConnection: 'AKS-Service-Connection'
-              namespace: stage
+              namespace: 'stage'
               manifests: |
                 k8s/deployment.yaml
                 k8s/service.yaml
               containers: |
-                microacr123.azurecr.io/user-service:$(tag)
+                $(acrName).azurecr.io/$(imageName):$(tag)
 
 # ========================
 # 🔹 STAGE 5: PROD
@@ -122,19 +122,19 @@ stages:
   dependsOn: Stage
   jobs:
   - deployment: ProdDeploy
-    environment: prod
+    environment: 'prod'
     strategy:
       runOnce:
         deploy:
           steps:
           - task: KubernetesManifest@0
-            displayName: Deploy to Prod AKS
+            displayName: 'Deploy to Prod AKS'
             inputs:
               action: deploy
               kubernetesServiceConnection: 'AKS-Service-Connection'
-              namespace: prod
+              namespace: 'prod'
               manifests: |
                 k8s/deployment.yaml
                 k8s/service.yaml
               containers: |
-                microacr123.azurecr.io/user-service:$(tag)
+                $(acrName).azurecr.io/$(imageName):$(tag)
