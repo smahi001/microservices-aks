@@ -7,40 +7,134 @@ pool:
 variables:
   imageName: user-service
   acrName: microacr123
+  tag: $(Build.BuildId)
 
-steps:
+stages:
 
-# 🔹 Install Node.js
-- task: NodeTool@0
-  inputs:
-    versionSpec: '18.x'
-  displayName: 'Install Node.js'
+# ========================
+# 🔹 STAGE 1: BUILD
+# ========================
+- stage: Build
+  displayName: Build and Push Image
+  jobs:
+  - job: BuildJob
+    steps:
+    - task: NodeTool@0
+      displayName: Install Node.js
+      inputs:
+        versionSpec: '18.x'
 
-# 🔹 Install dependencies
-- script: |
-    cd user-service
-    npm install
-  displayName: 'Install dependencies'
+    - script: |
+        cd user-service
+        npm install
+      displayName: Install dependencies
 
-# 🔹 Build and Push Docker Image to ACR
-- task: Docker@2
-  displayName: 'Build and Push Image to ACR'
-  inputs:
-    containerRegistry: 'ACR-Service-Connection'
-    repository: 'user-service'
-    command: 'buildAndPush'
-    Dockerfile: 'user-service/Dockerfile'
-    tags: |
-      latest
-      $(Build.BuildId)
+    - task: Docker@2
+      displayName: Build and Push Image
+      inputs:
+        containerRegistry: 'ACR-Service-Connection'
+        repository: '$(imageName)'
+        command: 'buildAndPush'
+        Dockerfile: 'user-service/Dockerfile'
+        tags: |
+          $(tag)
 
-# 🔹 Deploy to AKS
-- task: KubernetesManifest@0
-  displayName: 'Deploy to AKS'
-  inputs:
-    action: deploy
-    kubernetesServiceConnection: 'AKS-Service-Connection'
-    namespace: default
-    manifests: |
-      k8s/deployment.yaml
-      k8s/service.yaml
+# ========================
+# 🔹 STAGE 2: DEV
+# ========================
+- stage: Dev
+  displayName: Deploy to Dev
+  dependsOn: Build
+  jobs:
+  - deployment: DevDeploy
+    environment: dev
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: KubernetesManifest@0
+            displayName: Deploy to Dev AKS
+            inputs:
+              action: deploy
+              kubernetesServiceConnection: 'AKS-Service-Connection'
+              namespace: dev
+              manifests: |
+                k8s/deployment.yaml
+                k8s/service.yaml
+              containers: |
+                microacr123.azurecr.io/user-service:$(tag)
+
+# ========================
+# 🔹 STAGE 3: QA
+# ========================
+- stage: QA
+  displayName: Deploy to QA
+  dependsOn: Dev
+  jobs:
+  - deployment: QADeploy
+    environment: qa
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: KubernetesManifest@0
+            displayName: Deploy to QA AKS
+            inputs:
+              action: deploy
+              kubernetesServiceConnection: 'AKS-Service-Connection'
+              namespace: qa
+              manifests: |
+                k8s/deployment.yaml
+                k8s/service.yaml
+              containers: |
+                microacr123.azurecr.io/user-service:$(tag)
+
+# ========================
+# 🔹 STAGE 4: STAGE
+# ========================
+- stage: Stage
+  displayName: Deploy to Stage
+  dependsOn: QA
+  jobs:
+  - deployment: StageDeploy
+    environment: stage
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: KubernetesManifest@0
+            displayName: Deploy to Stage AKS
+            inputs:
+              action: deploy
+              kubernetesServiceConnection: 'AKS-Service-Connection'
+              namespace: stage
+              manifests: |
+                k8s/deployment.yaml
+                k8s/service.yaml
+              containers: |
+                microacr123.azurecr.io/user-service:$(tag)
+
+# ========================
+# 🔹 STAGE 5: PROD
+# ========================
+- stage: Prod
+  displayName: Deploy to Production
+  dependsOn: Stage
+  jobs:
+  - deployment: ProdDeploy
+    environment: prod
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: KubernetesManifest@0
+            displayName: Deploy to Prod AKS
+            inputs:
+              action: deploy
+              kubernetesServiceConnection: 'AKS-Service-Connection'
+              namespace: prod
+              manifests: |
+                k8s/deployment.yaml
+                k8s/service.yaml
+              containers: |
+                microacr123.azurecr.io/user-service:$(tag)
